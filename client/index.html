@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>DToroChat</title>
+    <link
+      rel="icon"
+      href="https://freepngimg.com/download/chat/158475-pic-bubble-chat-icon-png-image-high-quality.png"
+      type="image/x-icon"
+    />
+    <script type="module">
+      import { io } from "https://cdn.socket.io/4.7.2/socket.io.esm.min.js";
+
+      const usernameLocalStorage = localStorage.getItem("username");
+
+      const socket = io({
+        auth: {
+          serverOffset: 0,
+          username: usernameLocalStorage || "",
+        },
+      });
+      const form = document.getElementById("form");
+      const input = document.getElementById("input");
+      const message = document.getElementById("message");
+      const usernameWeb = document.getElementById("username");
+      const container = document.querySelector(".container-scroll");
+
+      const scrollToBottom = () => {
+        container.scrollTop = container.scrollHeight;
+      };
+
+      usernameWeb.focus();
+      scrollToBottom();
+
+      if (usernameLocalStorage) {
+        usernameWeb.value = usernameLocalStorage;
+      }
+
+      const sendMessage = () => {
+        if (!usernameWeb.value) {
+          alert("Please enter a username");
+          usernameWeb.focus();
+          return false;
+        }
+
+        localStorage.setItem("username", usernameWeb.value);
+
+        if (input.value) {
+          const item = `<div class="w-auto self-end bg-green-200 p-2 rounded-lg">
+            <p class="text-md font-bold text-right">${usernameWeb.value}</p>
+            <p class="text-right">${input.value}</p>
+          </div>`;
+
+          socket.emit("chat message", input.value, usernameWeb.value);
+
+          input.value = "";
+          input.focus();
+          scrollToBottom();
+        }
+      };
+
+      socket.on("chat message", (msg, serverOffset, username) => {
+        const identityUserColorMsg =
+          usernameWeb.value === username
+            ? "self-end bg-green-200"
+            : "self-start bg-gray-200";
+
+        localStorage.setItem("username", usernameWeb.value);
+
+        const item = `<div class="w-auto ${identityUserColorMsg} p-2 rounded-lg">
+          <p class="text-md font-bold">${username}</p>
+          <p class="text-left break-normal">${msg}</p>
+        </div>`;
+
+        message.insertAdjacentHTML("beforeend", item);
+        socket.auth.serverOffset = serverOffset;
+        socket.auth.username = username;
+        scrollToBottom();
+      });
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        sendMessage();
+      });
+    </script>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+    </style>
+  </head>
+  <body class="flex justify-center items-center h-screen">
+    <section
+      class="flex justify-center items-center flex-col rounded-lg max-w-90 h-full p-3 gap-4 shadow-2xl"
+      id="chat"
+    >
+      <h1 class="text-2xl text-white select-none">DToroChat</h1>
+      <span><input type="text" placeholder="username" id="username" /></span>
+      <div
+        class="flex flex-col justify-start gap-2 w-80 h-96 overflow-y-auto container-scroll py-3 text-black select-none"
+        id="message"
+      >
+        <!-- <div class="w-auto self-start bg-gray-200 p-2 rounded-lg">
+          <p class="text-md font-bold">Diego Toro Reyes</p>
+          <p class="text-left">Hola es es un test</p>
+        </div>
+        <div class="w-auto self-end bg-green-200 p-2 rounded-lg">
+          <p class="text-md font-bold text-right">Diego Toro Reyes</p>
+          <p class="text-right">Hola es es un test</p>
+        </div> -->
+      </div>
+      <form
+        class="flex w-full h-15 justify-between border rounded-full"
+        id="form"
+      >
+        <input
+          class="w-full resize-none p-2 outline-none rounded-l-full"
+          id="input"
+        />
+        <button
+          class="bg-green-700 text-white font-bold w-20 hover:bg-green-400/60 rounded-r-full"
+          type="submit"
+        >
+          Enviar
+        </button>
+      </form>
+    </section>
+  </body>
+</html>
